@@ -151,7 +151,7 @@ class Data:
 
     def pg_is_local_access(self,):
         """
-        Verify if the user running pg_activity can acces 
+        Verify if the user running pg_activity can acces
         system informations for the postmaster process.
         """
         try:
@@ -207,6 +207,31 @@ class Data:
         ret = cur.fetchone()
         return ret['terminated']
 
+    def pg_get_executed_query(self, pid):
+        """
+        Return the executed query for a given pid
+        """
+        cur = self.pg_conn.cursor()
+        cur.execute("select query from pg_stat_activity where pid=%s", (pid,))
+        ret = cur.fetchone()
+        return ret['query'] if ret else ''
+
+    def pg_explain_query(self, pid, analyse=False):
+        """
+        Explain the executed query for a given pid
+        """
+        try:
+            query = "explain %s %s" % (
+                'analyze' if analyse else '',
+                self.pg_get_executed_query(pid)
+            )
+            cur = self.pg_conn.cursor()
+            cur.execute(query)
+            ret = cur.fetchall()
+            return "\n".join([l[0] for l in ret])
+        except Exception as e:
+            return str(e)
+
     def pg_get_num_version(self, text_version):
         """
         Get PostgreSQL short & numeric version from
@@ -234,7 +259,7 @@ class Data:
     def pg_get_num_dev_version(self, text_version):
         """
         Get PostgreSQL short & numeric devel. or beta version
-        from a string (SELECT version()). 
+        from a string (SELECT version()).
         """
         res = re.match(
             r"^(PostgreSQL|EnterpriseDB) ([0-9]+)(?:\.([0-9]+))?(devel|beta[0-9]+|rc[0-9]+)",
@@ -293,7 +318,7 @@ class Data:
         query = """
         SELECT
             COUNT(*) as active_connections
-        FROM pg_stat_activity 
+        FROM pg_stat_activity
         WHERE state = 'active'
         """
 
@@ -590,7 +615,7 @@ class Data:
         duration,
         state,
         query
-    FROM 
+    FROM
         (
         SELECT
             blocking.pid,

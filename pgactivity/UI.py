@@ -66,6 +66,9 @@ PGTOP_TRUNCATE =        1
 PGTOP_WRAP_NOINDENT =   2
 PGTOP_WRAP =            3
 
+# Explain query
+PGTOP_SIGNAL_EXPLAIN_QUERY = ord('e')
+
 # Cancel/Terminate backend
 PGTOP_SIGNAL_CANCEL_BACKEND =    ord('c')
 PGTOP_SIGNAL_TERMINATE_BACKEND = ord('k')
@@ -818,6 +821,16 @@ class UI:
         colno += self.__print_string(
             (self.maxy - 1),
             colno,
+            "e",
+            self.__get_color(0))
+        colno += self.__print_string(
+            (self.maxy - 1),
+            colno,
+            "Explain the query    ",
+            self.__get_color(C_CYAN)|curses.A_REVERSE)
+        colno += self.__print_string(
+            (self.maxy - 1),
+            colno,
             "Other",
             self.__get_color(0))
         colno += self.__print_string(
@@ -1030,6 +1043,13 @@ class UI:
                     self.__ask_terminate_or_cancel_backends(k, self.pid_yank,)
                 self.verbose_mode = old_verbose_mode
                 curses.flushinp()
+                return 0
+            # Explain highmlited query
+            if k == PGTOP_SIGNAL_EXPLAIN_QUERY:
+                print(process[current_pos]['pid'])
+                print(self.data.pg_get_executed_query(process[current_pos]['pid']))
+                print(self.data.pg_explain_query(process[current_pos]['pid']))
+
                 return 0
             # Move cursor
             if k == curses.KEY_DOWN or k == curses.KEY_UP:
@@ -1824,6 +1844,11 @@ class UI:
                 00,
                 "      R",
                 "force refresh")
+        self.__display_help_key(
+                self.lineno,
+                45,
+                "      e",
+                "explain query")
         self.lineno += 1
         self.__print_string(
                 self.lineno,
